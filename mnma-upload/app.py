@@ -6,6 +6,7 @@ import asyncio
 import logging
 from async_loop import loop
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from uploader import Uploader
 from dependencies import async_queue
 from dependencies import rds_helper
@@ -103,6 +104,16 @@ def create_app() -> FastAPI:
         docs_url="/upload/docs",
         lifespan=lifespan
     )
+    
+    # Add CORS middleware
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_methods=["*"],
+        allow_headers=["*"],
+        allow_credentials=True,
+    )
+    
     app.include_router(api.router)
     return app
 

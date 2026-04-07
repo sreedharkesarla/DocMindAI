@@ -9,14 +9,75 @@
 
 ---
 
+## 📚 Documentation
+
+### Quick Links
+- **[📐 Full Architecture & Implementation](ARCHITECTURE.md)** - Complete system architecture, data flows, and backend services
+- **[🎨 UI Implementation Guide](UI_IMPLEMENTATION.md)** - Detailed UI documentation (Simple HTML + React)
+- **[🚀 Quick Start Guide](QUICKSTART.md)** - Get up and running in 5 minutes
+- **[📋 Testing Report](TESTING_REPORT.md)** - Comprehensive testing results and validation
+- **[🔧 Deployment Guide](DEPLOYMENT_GUIDE.md)** - Production deployment instructions
+
+### Architecture Overview
+
+Minima AWS consists of **4 microservices** working together:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        CLIENT LAYER                             │
+│  ┌──────────────────┐              ┌──────────────────┐        │
+│  │  test-ui.html    │              │   React UI       │        │
+│  │  (Simple HTML)   │              │   (mnma-ui/)     │        │
+│  └──────────────────┘              └──────────────────┘        │
+└────────────────────┬────────────────────────┬───────────────────┘
+                     │                        │
+              HTTP/REST + WebSocket          │
+                     │                        │
+┌────────────────────┴────────────────────────┴───────────────────┐
+│                    BACKEND SERVICES                              │
+│  ┌────────────┐  ┌────────────┐  ┌────────────┐                │
+│  │mnma-upload │  │mnma-index  │  │ mnma-chat  │                │
+│  │  :8001     │  │  :8002     │  │  :8003     │                │
+│  └────────────┘  └────────────┘  └────────────┘                │
+└─────────┬────────────────┬────────────────┬─────────────────────┘
+          │                │                │
+┌─────────┴────────────────┴────────────────┴─────────────────────┐
+│              DATA & STORAGE LAYER                                │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐        │
+│  │ AWS SQS  │  │  AWS S3  │  │  Qdrant  │  │  MySQL   │        │
+│  └──────────┘  └──────────┘  └──────────┘  └──────────┘        │
+└──────────────────────────────────────────────────────────────────┘
+          │                                   │
+┌─────────┴───────────────────────────────────┴───────────────────┐
+│                      AWS BEDROCK                                 │
+│  ┌────────────────────────┐  ┌────────────────────────┐        │
+│  │ Titan Text Embeddings  │  │  Claude 3 Haiku        │        │
+│  │  (1536 dimensions)     │  │  (Conversational AI)   │        │
+│  └────────────────────────┘  └────────────────────────┘        │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+**Services:**
+1. **mnma-upload** (Port 8001) - File upload, S3 storage, job queuing
+2. **mnma-index** (Port 8002) - Document processing, embedding, vector indexing
+3. **mnma-chat** (Port 8003) - WebSocket-based RAG chat with streaming responses
+4. **Qdrant** (Port 6333) - Vector database for semantic search
+
+**UI Options:**
+- **test-ui.html** - Simple HTML interface (zero dependencies, instant use)
+- **mnma-ui/** - Professional React + TypeScript + Material-UI application
+
+---
+
 ## 🌐 Overview
 
 Minima AWS operates as a set of containerized services that work together to:
 
-1. 📤 Upload & process documents from an **AWS S3** bucket.
-2. 🔍 Index documents for vector search using **Qdrant**.
-3. 🤖 Leverage **AWS Bedrock** for embeddings and LLM-based querying.
-4. 💬 Enable chat-based retrieval with an **LLM using indexed documents**.
+1. 📤 **Upload & Process** - Documents uploaded to **AWS S3**, metadata stored in **MySQL**
+2. 🔍 **Index & Embed** - Documents chunked and embedded using **AWS Bedrock Titan** (1536-dim vectors)
+3. 🗄️ **Vector Storage** - Embeddings stored in **Qdrant** for semantic search
+4. 💬 **RAG Chat** - **Claude 3 Haiku** answers questions using retrieved document context
+5. ⚡ **Async Processing** - **SQS queue** handles indexing jobs asynchronously
 
 ---
 
@@ -121,12 +182,13 @@ This will start all required services in separate containers.
 
 The system consists of multiple microservices, each running as a **Docker container**.
 
-| **Service**       | **Description** |
-|------------------|---------------|
-| `qdrant`        | Vector storage for document embeddings. |
-| `mnma-upload`   | Uploads and processes documents from AWS S3. |
-| `mnma-index`    | Extracts embeddings (using AWS Bedrock) and indexes documents into Qdrant. |
-| `mnma-chat`     | Uses an AWS Bedrock LLM to respond to queries based on indexed documents. |
+| **Service**       | **Port** | **Description** |
+|------------------|----------|---------------|
+| `qdrant`        | 6333, 6334 | Vector storage for document embeddings. |
+| `mnma-upload`   | 8001 | Uploads and processes documents from AWS S3. |
+| `mnma-index`    | 8002 | Extracts embeddings (using AWS Bedrock) and indexes documents into Qdrant. |
+| `mnma-chat`     | 8003 | Uses an AWS Bedrock LLM to respond to queries based on indexed documents. |
+| `mnma-ui`       | 3000 | React web interface for document upload and chat. |
 
 ---
 
@@ -178,16 +240,64 @@ curl -X 'POST' \
 
 ---
 
-## 🗨️ Connecting to Minima Chat
+## �️ Minima Web UI
 
-Minima's **UI is under development** at [**Minima UI GitHub Repo**](https://github.com/pshenok/minima-ui).  
-Until the UI is ready, you can use **`websocat`** to interact with the chat service.
+Minima now includes a **React-based web interface** for easy document upload and chat interaction!
+
+### 🚀 **Quick Start**
+
+1. **Start all services (including UI)**:
+   ```bash
+   docker compose up --build
+   ```
+
+2. **Access the UI**:
+   - Open your browser to **http://localhost:3000**
+
+3. **Login**:
+   - Enter any user ID (e.g., `test-user`)
+   - Your ID is stored in localStorage
+
+4. **Upload Documents**:
+   - Drag and drop files or click "Browse Files"
+   - Supported formats: PDF, DOC, DOCX, XLS, XLSX, TXT, MD, CSV
+   - Watch as files progress: uploaded → processing → indexed
+
+5. **Chat with Your Documents**:
+   - Select indexed files from the list
+   - Click "Chat" button
+   - Ask questions about your documents
+   - Context is maintained across the conversation
+
+### 📱 **Features**
+
+- ✨ **Modern Material-UI design**
+- 📤 **Drag-and-drop file upload** with progress tracking
+- 📁 **File management** - view, select, delete files
+- 💬 **Real-time chat** with WebSocket connection
+- 🔄 **Auto-refresh** of file indexing status
+- 🎨 **Responsive design** for mobile and desktop
+- 🔔 **Toast notifications** for all actions
+
+### 🛠️ **Running UI in Development**
+
+If you prefer to run the UI separately:
+
+```bash
+cd mnma-ui
+npm install
+npm run dev
+```
+
+The UI will be available at http://localhost:3000
+
+For more details, see [mnma-ui/README.md](mnma-ui/README.md)
 
 ---
 
-## 📡 Using WebSocket with Websocat
+## 📡 Alternative: Using WebSocket with Websocat
 
-To connect to Minima Chat manually, install **`websocat`**:
+For advanced users or debugging, you can still interact with the chat service directly using **`websocat`**:
 
 ### 🔹 **Install Websocat**
 **MacOS:**

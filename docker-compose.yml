@@ -98,6 +98,19 @@ services:
       - QDRANT_COLLECTION=${QDRANT_COLLECTION}
       - EMBEDDING_MODEL_ID=${EMBEDDING_MODEL_ID}
       - CHAT_MODEL_ID=${CHAT_MODEL_ID}
+
+  mnma-ui:
+    build: ./mnma-ui
+    volumes:
+      - ./mnma-ui:/app
+      - /app/node_modules
+    ports:
+      - 3000:3000
+    environment:
+      - VITE_UPLOAD_API_URL=http://localhost:8001
+      - VITE_CHAT_WS_URL=ws://localhost:8003
     depends_on:
+      - mnma-upload
+      - mnma-chat
       - qdrant
     
