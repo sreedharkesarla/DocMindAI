@@ -1,33 +1,53 @@
 <p align="center">
-  <a href="https://www.mnma.ai/" target="blank"><img src="assets/logo-full.svg" width="300" alt="MNMA Logo" /></a>
+  <h1 align="center">DocuMindAI</h1>
+  <p align="center">Intelligent Document Search & Chat Platform</p>
 </p>
-
-
-# 🚀 Minima AWS – Cloud-Based RAG Solution
-
-**Minima AWS** is an open-source, cloud-based **Retrieval-Augmented Generation (RAG)** framework that integrates with **AWS services**, including **S3, SQS, RDS**, and **AWS Bedrock** for embedding models and LLMs. This setup enables efficient document retrieval and chat-based interaction with your indexed data.
 
 ---
 
-## 📚 Documentation
+## 🚀 Quick Start
 
-### Quick Links
-- **[📐 Full Architecture & Implementation](ARCHITECTURE.md)** - Complete system architecture, data flows, and backend services
-- **[🎨 UI Implementation Guide](UI_IMPLEMENTATION.md)** - Detailed UI documentation (Simple HTML + React)
-- **[🚀 Quick Start Guide](QUICKSTART.md)** - Get up and running in 5 minutes
-- **[📋 Testing Report](TESTING_REPORT.md)** - Comprehensive testing results and validation
-- **[🔧 Deployment Guide](DEPLOYMENT_GUIDE.md)** - Production deployment instructions
+**New to DocuMindAI?** 👉 **[Read the Getting Started Guide](GETTING_STARTED.md)**
 
-### Architecture Overview
+The Getting Started guide provides step-by-step instructions for:
+- Installing prerequisites
+- Configuring AWS credentials
+- Starting Docker services
+- Accessing the admin interface
+- Uploading and chatting with documents
 
-Minima AWS consists of **4 microservices** working together:
+**Already set up?** Login at: **http://localhost:3001** (admin / Admin@123)
+
+---
+
+## 📖 Documentation
+
+| Guide | Description |
+|-------|-------------|
+| **[Getting Started](GETTING_STARTED.md)** | Complete setup guide from clone to running application |
+| **[Setup Checklist](SETUP_CHECKLIST.md)** | Step-by-step checklist to verify your setup |
+| **[Quick Reference](QUICK_REFERENCE.md)** | Common commands, URLs, and troubleshooting |
+| **[Fresh Start](FRESH_START.md)** | How to clean Qdrant and S3 for a fresh start |
+
+---
+
+# 🚀 DocuMindAI – AI-Powered Document Intelligence
+
+**DocuMindAI** is an advanced **Retrieval-Augmented Generation (RAG)** platform that integrates with **AWS services**, including **S3, SQS, RDS**, and **AWS Bedrock** for embedding models and LLMs. This solution enables intelligent document search and AI-powered chat interactions with your indexed data.
+
+---
+
+## 🏗️ Architecture Overview
+
+DocuMindAI consists of **6 microservices** working together:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                        CLIENT LAYER                             │
 │  ┌──────────────────┐              ┌──────────────────┐        │
-│  │  test-ui.html    │              │   React UI       │        │
-│  │  (Simple HTML)   │              │   (mnma-ui/)     │        │
+│  │  Admin Console   │              │   Public UI      │        │
+│  │ (documindai-     │              │ (documindai-ui/) │        │
+│  │    admin/)       │              │                  │        │
 │  └──────────────────┘              └──────────────────┘        │
 └────────────────────┬────────────────────────┬───────────────────┘
                      │                        │
@@ -36,8 +56,9 @@ Minima AWS consists of **4 microservices** working together:
 ┌────────────────────┴────────────────────────┴───────────────────┐
 │                    BACKEND SERVICES                              │
 │  ┌────────────┐  ┌────────────┐  ┌────────────┐                │
-│  │mnma-upload │  │mnma-index  │  │ mnma-chat  │                │
-│  │  :8001     │  │  :8002     │  │  :8003     │                │
+│  │documindai- │  │documindai- │  │documindai- │                │
+│  │  upload    │  │   index    │  │   chat     │                │
+│  │  :8001     │  │  :8002     │  │  (internal)│                │
 │  └────────────┘  └────────────┘  └────────────┘                │
 └─────────┬────────────────┬────────────────┬─────────────────────┘
           │                │                │
@@ -58,20 +79,21 @@ Minima AWS consists of **4 microservices** working together:
 ```
 
 **Services:**
-1. **mnma-upload** (Port 8001) - File upload, S3 storage, job queuing
-2. **mnma-index** (Port 8002) - Document processing, embedding, vector indexing
-3. **mnma-chat** (Port 8003) - WebSocket-based RAG chat with streaming responses
+1. **documindai-upload** (Port 8001) - File upload, authentication, S3 storage, job queuing
+2. **documindai-index** (Port 8002) - Document processing, embedding, vector indexing
+3. **documindai-chat** (Internal) - WebSocket-based RAG chat with streaming responses
 4. **Qdrant** (Port 6333) - Vector database for semantic search
+5. **MySQL** (Port 3307) - User database, document metadata
 
-**UI Options:**
-- **test-ui.html** - Simple HTML interface (zero dependencies, instant use)
-- **mnma-ui/** - Professional React + TypeScript + Material-UI application
+**UI:**
+- **documindai-admin** (Port 3001) - React admin interface with Material-UI
+- **documindai-ui** - Public-facing document chat interface
 
 ---
 
-## 🌐 Overview
+## 🌐 How It Works
 
-Minima AWS operates as a set of containerized services that work together to:
+DocuMindAI operates as a set of containerized services that work together to:
 
 1. 📤 **Upload & Process** - Documents uploaded to **AWS S3**, metadata stored in **MySQL**
 2. 🔍 **Index & Embed** - Documents chunked and embedded using **AWS Bedrock Titan** (1536-dim vectors)
@@ -95,7 +117,7 @@ Minima AWS operates as a set of containerized services that work together to:
 
 ## 🔧 Environment Variables
 
-Before running the application, create a `.env` file in the **project root directory** and configure the following variables:
+Before running the application, ensure you have a `.env` file in the **project root directory** with the following variables:
 
 ```ini
 # AWS Credentials & Services
@@ -103,35 +125,38 @@ AWS_ACCESS_KEY_ID=your_aws_access_key
 AWS_SECRET_ACCESS_KEY=your_aws_secret_key
 AWS_DEFAULT_REGION=us-east-1
 AWS_BUCKET_NAME=your_s3_bucket_name
-AWS_FILES_PATH=s3_folder_path
+AWS_FILES_PATH=TM
 
 # SQS Configuration
 AWS_SQS_QUEUE=your_sqs_queue_name
 
-# Local File Storage (optional)
-LOCAL_FILES_PATH=/path/to/local/storage
+# Local File Storage
+LOCAL_FILES_PATH=/tmp/uploads
 
-# RDS Database Configuration
-RDS_DB_INSTANCE=your_rds_instance
-RDS_DB_NAME=your_rds_database
-RDS_DB_USER=your_rds_user
-RDS_DB_PASSWORD=your_rds_password
-RDS_DB_PORT=5432  # PostgreSQL default
+# Database Configuration (MySQL)
+RDS_DB_INSTANCE=mysql
+RDS_DB_NAME=documindai_db
+RDS_DB_USER=documindai_user
+RDS_DB_PASSWORD=documindai_pass
+RDS_DB_PORT=3306
+MYSQL_ROOT_PASSWORD=root123
 
 # Vector Search Configuration (Qdrant)
 QDRANT_BOOTSTRAP=qdrant
-QDRANT_COLLECTION=minima_collection
+QDRANT_COLLECTION=documindai_collection
 
-# AWS Bedrock - LLM & Embedding Model
+# AWS Bedrock - Embedding & LLM Models
 EMBEDDING_MODEL_ID=amazon.titan-embed-text-v1
-EMBEDDING_SIZE=1024
-CHAT_MODEL_ID=arn:aws:bedrock:us-west-2:123456789012:model/anthropic.claude-3-sonnet-20240229-v1:0
+EMBEDDING_SIZE=1536
+CHAT_MODEL_ID=anthropic.claude-3-haiku-20240307-v1:0
 ```
 
-### 📝 Explanation:
+### 📝 Key Configuration:
 
-- **`EMBEDDING_MODEL_ID`** → Embedding model for converting documents into vector representations.
-- **`CHAT_MODEL_ID`** → LLM model for answering user queries.
+- **`EMBEDDING_MODEL_ID`** → AWS Bedrock embedding model for document vectorization
+- **`CHAT_MODEL_ID`** → AWS Bedrock LLM for answering user queries (Claude 3 Haiku)
+- **`RDS_DB_NAME`** → Database name (documindai_db by default)
+- **Database Credentials** → Pre-configured for local Docker setup
 
 ---
 
@@ -333,15 +358,15 @@ This command initiates a **chat session** with files **67890** and **54321** for
 
 ## 📜 License
 
-Minima AWS is licensed under the **Mozilla Public License v2.0 (MPLv2)**.
+DocuMindAI is licensed under the **Mozilla Public License v2.0 (MPLv2)**.
 
-📌 **GitHub Repository:** [Minima AWS](https://github.com/pshenok/minima-aws)
+📌 **GitHub Repository:** [DocuMindAI](https://github.com/pshenok/DocuMindAI)
 
 ---
 
 ## 📞 Need Help?
 
-- ❓ **Issues?** Open a [GitHub Issue](https://github.com/pshenok/minima-aws/issues).
+- ❓ **Issues?** Open a [GitHub Issue](https://github.com/pshenok/DocuMindAI/issues).
 - 💬 **Questions?** Contact us via **GitHub Discussions**.
 
 

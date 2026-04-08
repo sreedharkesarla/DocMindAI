@@ -1,12 +1,16 @@
 version: '3.9'
+
+# Project name for Docker
+name: documindai
+
 services:
   mysql:
     image: mysql:8.0
-    container_name: minima-mysql
+    container_name: documindai-mysql
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root123}
-      MYSQL_DATABASE: ${RDS_DB_NAME:-minima_db}
+      MYSQL_DATABASE: ${RDS_DB_NAME:-documindai_db}
       MYSQL_USER: ${RDS_DB_USER:-admin}
       MYSQL_PASSWORD: ${RDS_DB_PASSWORD:-admin123}
     ports:
@@ -38,10 +42,10 @@ services:
     environment:
       QDRANT__LOG_LEVEL: "INFO"
 
-  mnma-upload:
-    build: ./mnma-upload
+  documindai-upload:
+    build: ./documindai-upload
     volumes:
-      - ./mnma-upload:/usr/src/app
+      - ./documindai-upload:/usr/src/app
     ports:
       - 8001:8000
     env_file:
@@ -67,10 +71,10 @@ services:
       mysql:
         condition: service_healthy
 
-  mnma-index:
-    build: ./mnma-index
+  documindai-index:
+    build: ./documindai-index
     volumes:
-      - ./mnma-index:/usr/src/app
+      - ./documindai-index:/usr/src/app
     ports:
       - 8002:8000
     env_file:
@@ -99,15 +103,15 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
-      mnma-upload:
+      documindai-upload:
         condition: service_started
       qdrant:
         condition: service_started
 
-  mnma-chat:
-    build: ./mnma-chat
+  documindai-chat:
+    build: ./documindai-chat
     volumes:
-      - ./mnma-chat:/usr/src/app
+      - ./documindai-chat:/usr/src/app
     env_file:
       - .env
     environment:
@@ -127,27 +131,27 @@ services:
       qdrant:
         condition: service_started
 
-  mnma-ui:
-    build: ./mnma-ui
+  documindai-ui:
+    build: ./documindai-ui
     volumes:
-      - ./mnma-ui:/app
+      - ./documindai-ui:/app
       - /app/node_modules
     ports:
       - 3000:3000
     environment:
       - VITE_UPLOAD_API_URL=http://localhost:8001
     depends_on:
-      - mnma-upload
+      - documindai-upload
       - qdrant
 
-  minima-admin:
-    build: ./minima-admin
+  documindai-admin:
+    build: ./documindai-admin
     ports:
       - 3001:80
     depends_on:
-      - mnma-upload
-      - mnma-index
-      - mnma-chat
+      - documindai-upload
+      - documindai-index
+      - documindai-chat
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/"]
