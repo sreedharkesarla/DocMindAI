@@ -22,6 +22,7 @@ python-multipart
 uvicorn[standard]
 SQLAlchemy
 pytz
+pymysql
 textstat
 numpy>=1.21.0
 aiofiles>=23.0.0

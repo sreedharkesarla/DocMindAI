@@ -25,6 +25,7 @@ import {
   AccountCircle,
   Menu as MenuIcon,
   Chat,
+  Analytics,
 } from '@mui/icons-material';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { useAppContext } from '../contexts/AppContext';
@@ -61,6 +62,7 @@ export const AppShell: React.FC = () => {
     { text: 'Processing Queue', icon: <QueueIcon />, path: '/queue' },
     { text: 'Ask Chat', icon: <Chat />, path: '/chat' },
     { text: 'Users & Roles', icon: <People />, path: '/users' },
+    { text: 'Usage & Costs', icon: <Analytics />, path: '/usage' },
   ];
 
   const drawer = (

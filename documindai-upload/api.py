@@ -4,6 +4,7 @@ import logging
 from typing import List
 from dependencies import async_queue
 from dependencies import rds_helper
+from usage_tracker import UsageTracker
 
 from fastapi import (
     File,
@@ -281,4 +282,74 @@ async def download_file(file_id: str, user_id: str = Query(...)):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to download file: {str(e)}"
+        )
+
+@router.get(
+    "/usage/{user_id}",
+    response_description='Get token usage and cost statistics for a user',
+)
+async def get_usage_stats(user_id: str, days: int = Query(30, ge=1, le=365)):
+    """
+    Get token usage and cost statistics for a user.
+
+    Args:
+        user_id (str): The user ID to retrieve usage stats for.
+        days (int): Number of days to look back (default: 30, max: 365).
+
+    Returns:
+        dict: Usage statistics including total tokens, costs, and breakdown by operation type.
+    """
+    if not user_id:
+        logger.error("Empty user ID provided")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User ID is required"
+        )
+
+    try:
+        tracker = UsageTracker()
+        usage_data = tracker.get_total_usage(user_id, days)
+        return usage_data
+    except Exception as e:
+        logger.error(f"Error retrieving usage stats for user {user_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve usage statistics: {str(e)}"
+        )
+
+@router.get(
+    "/usage/{user_id}/daily",
+    response_description='Get daily usage breakdown for a user',
+)
+async def get_daily_usage(user_id: str, days: int = Query(30, ge=1, le=365)):
+    """
+    Get daily usage breakdown for a user.
+
+    Args:
+        user_id (str): The user ID to retrieve daily usage for.
+        days (int): Number of days to look back (default: 30, max: 365).
+
+    Returns:
+        dict: Daily usage records with token counts and costs.
+    """
+    if not user_id:
+        logger.error("Empty user ID provided")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User ID is required"
+        )
+
+    try:
+        tracker = UsageTracker()
+        daily_usage = tracker.get_user_usage(user_id, days)
+        return {
+            "user_id": user_id,
+            "period_days": days,
+            "records": daily_usage
+        }
+    except Exception as e:
+        logger.error(f"Error retrieving daily usage for user {user_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve daily usage: {str(e)}"
         )

@@ -15,6 +15,7 @@ from langchain_community.document_loaders import (
     UnstructuredWordDocumentLoader,
     UnstructuredExcelLoader,
 )
+from usage_tracker import UsageTracker
 
 loggers = logging.getLogger(__name__)
 
@@ -52,6 +53,7 @@ class Indexer:
             host=os.environ.get("QDRANT_BOOTSTRAP"), 
         )
         self.rds_helper = rds_helper
+        self.usage_tracker = UsageTracker()
 
     def setup_collection(self, user_id):
         """
@@ -147,6 +149,32 @@ class Indexer:
             loggers.info(f"Inserting into vector storage: {path}")
             uuids = [str(uuid.uuid4()) for _ in range(len(documents))]
             vector_store.add_documents(documents=documents, ids=uuids)
+            
+            # Track embedding token usage
+            try:
+                # Calculate total text length for token estimation
+                total_text = " ".join([doc.page_content for doc in documents])
+                # Rough estimation: ~4 characters per token
+                estimated_tokens = len(total_text) // 4
+                
+                file_name = os.path.basename(path)
+                self.usage_tracker.track_usage(
+                    user_id=user_id,
+                    operation_type='embedding',
+                    model_id=os.environ.get("EMBEDDING_MODEL_ID"),
+                    input_tokens=estimated_tokens,
+                    output_tokens=0,  # Embedding models don't produce output tokens
+                    file_id=file_id,
+                    operation_details={
+                        'file_name': file_name,
+                        'file_type': file_extension,
+                        'chunks': len(documents),
+                        'total_chars': len(total_text)
+                    }
+                )
+            except Exception as e:
+                loggers.error(f"Failed to track embedding usage: {e}")
+            
             saved = self.rds_helper.update_status_for_files([file_id], "indexed")
             loggers.info(f"Saved: {saved}")
             loggers.info(f"updated status for file_id {file_id}")

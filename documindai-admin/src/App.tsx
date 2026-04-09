@@ -10,6 +10,7 @@ import { ProcessingQueuePage } from './pages/ProcessingQueuePage';
 import { JobDetailPage } from './pages/JobDetailPage';
 import { UsersRolesPage } from './pages/UsersRolesPage';
 import { ChatPage } from './pages/ChatPage';
+import { UsagePage } from './pages/UsagePage';
 import { NotificationSnackbar } from './components/NotificationSnackbar';
 
 const theme = createTheme({
@@ -62,6 +63,7 @@ function App() {
               <Route path="jobs/:jobId" element={<JobDetailPage />} />
               <Route path="chat" element={<ChatPage />} />
               <Route path="users" element={<UsersRolesPage />} />
+              <Route path="usage" element={<UsagePage />} />
             </Route>
             <Route path="*" element={<Navigate to="/intake" replace />} />
           </Routes>

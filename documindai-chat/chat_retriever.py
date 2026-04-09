@@ -17,6 +17,7 @@ from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_community.chat_message_histories import SQLChatMessageHistory
 from langchain.chains.combine_documents.stuff import create_stuff_documents_chain
 from langchain.chains.history_aware_retriever import create_history_aware_retriever
+from usage_tracker import UsageTracker
 
 loggers = logging.getLogger(__name__)
 
@@ -62,6 +63,7 @@ class ChatRetriever:
             temperature=0,
             max_tokens=None,
         )
+        self.usage_tracker = UsageTracker()
         self.chat_rag = self.create_chat_rag_chain()
 
     def get_session_history(self) -> BaseChatMessageHistory:
@@ -162,7 +164,7 @@ class ChatRetriever:
 
     def query(self, question: str):
         """
-        Processes a user query through the RAG chain and returns the generated answer.
+        Processes a user query through the RAG chain, tracks token usage, and returns the generated answer.
         
         Args:
             question (str): The user's question or input.
@@ -170,9 +172,41 @@ class ChatRetriever:
         Returns:
             str: The generated answer from the conversational RAG chain.
         """
-        answer = self.chat_rag.invoke(
+        # Get response with metadata
+        response = self.chat_rag.invoke(
             input= { "input": f"{question}" },
             config={ "configurable": {"chat_id": self.get_chat_id()} },
         )
-
-        return answer["answer"]
+        
+        # Extract token usage from response metadata if available
+        usage = response.get('usage_metadata', {})
+        input_tokens = usage.get('input_tokens', 0)
+        output_tokens = usage.get('output_tokens', 0)
+        
+        # If usage_metadata is not in response, estimate tokens (rough approximation)
+        if input_tokens == 0 and output_tokens == 0:
+            # Rough estimation: ~4 characters per token
+            input_tokens = len(question) // 4
+            answer_text = response.get("answer", "")
+            output_tokens = len(answer_text) // 4
+            loggers.warning("Token usage not found in response metadata, using estimation")
+        
+        # Track usage to database
+        try:
+            self.usage_tracker.track_usage(
+                user_id=self.user_id,
+                operation_type='chat',
+                model_id=os.environ.get("CHAT_MODEL_ID"),
+                input_tokens=input_tokens,
+                output_tokens=output_tokens,
+                conversation_id=self.conversation_id,
+                operation_details={
+                    'question_length': len(question),
+                    'files_count': len(self.files_id),
+                    'has_context': len(response.get('context', [])) > 0
+                }
+            )
+        except Exception as e:
+            loggers.error(f"Failed to track chat usage: {e}")
+        
+        return response["answer"]
