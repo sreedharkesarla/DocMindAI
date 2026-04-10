@@ -102,6 +102,52 @@ async def get_document_types():
     """
     return {"document_types": DOCUMENT_TYPES}
 
+@router.get(
+    "/indexing-status",
+    response_description='Get current indexing status and active jobs',
+)
+async def get_indexing_status():
+    """
+    Retrieve the current indexing status, including files being processed.
+
+    Returns:
+        Dict: A dictionary containing:
+            - processing_files: List of files currently being indexed
+            - total_processing: Count of files being indexed
+    """
+    processing_files = rds_helper.fetch_processing_files()
+    
+    return {
+        "processing_files": processing_files,
+        "total_processing": len(processing_files)
+    }
+
+@router.get(
+    "/pipeline-status/{user_id}",
+    response_description='Get complete pipeline status for user',
+)
+async def get_pipeline_status(user_id: str):
+    """
+    Retrieve the complete pipeline status showing files at each stage.
+
+    Args:
+        user_id (str): The user ID to retrieve pipeline status for.
+
+    Returns:
+        Dict: A dictionary containing:
+            - pipeline: Files grouped by stage (uploaded, processing, indexed)
+            - recent_files: Most recent 20 files
+            - total_files: Total number of files
+    """
+    if not user_id:
+        logger.error("Empty user ID provided")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Empty user ID provided"
+        )
+    
+    return rds_helper.fetch_pipeline_status(user_id)
+
 @router.post(
     "/upload_files/", 
     response_description='Upload files by user id',

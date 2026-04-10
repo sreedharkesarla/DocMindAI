@@ -19,7 +19,6 @@ import {
 } from '@mui/material';
 import {
   CloudUpload,
-  Queue as QueueIcon,
   People,
   Notifications,
   AccountCircle,
@@ -30,6 +29,7 @@ import {
   Settings,
   HealthAndSafety,
   Article,
+  AccountTree,
 } from '@mui/icons-material';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { useAppContext } from '../contexts/AppContext';
@@ -65,7 +65,7 @@ export const AppShell: React.FC = () => {
   const menuItems = [
     { text: 'Dashboard', icon: <Dashboard />, path: '/dashboard' },
     { text: 'File Intake', icon: <CloudUpload />, path: '/intake' },
-    { text: 'Processing Queue', icon: <QueueIcon />, path: '/queue' },
+    { text: 'Processing Pipeline', icon: <AccountTree />, path: '/pipeline' },
     { text: 'Ask Chat', icon: <Chat />, path: '/chat' },
     { text: 'Users & Roles', icon: <People />, path: '/users' },
     { text: 'Usage & Costs', icon: <Analytics />, path: '/usage' },

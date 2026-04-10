@@ -195,8 +195,46 @@ class Indexer:
         except Exception as e:
             loggers.error(f"Error to vectorize file: {path}")
             loggers.error(f"Error: {e}")
+            # Update status to failed
+            try:
+                self.rds_helper.update_status_for_files([file_id], "failed")
+            except:
+                pass
         finally:
             self.delete_file(path)
+    
+    def get_file_status(self, file_id: str) -> str:
+        """
+        Get the current status of a file from the database.
+        
+        Args:
+            file_id (str): The unique identifier for the file.
+            
+        Returns:
+            str: The status of the file ('uploaded', 'processing', 'indexed', etc.), or None if not found.
+        """
+        try:
+            result = self.rds_helper.get_file_status(file_id)
+            if result:
+                return result.get('status')
+            return None
+        except Exception as e:
+            loggers.error(f"Error getting file status for {file_id}: {e}")
+            return None
+    
+    def update_file_status(self, file_id: str, status: str):
+        """
+        Update the status of a file in the database.
+        
+        Args:
+            file_id (str): The unique identifier for the file.
+            status (str): The new status ('processing', 'indexed', 'failed', etc.).
+        """
+        try:
+            self.rds_helper.update_status_for_files([file_id], status)
+            loggers.info(f"Updated status for file_id {file_id} to {status}")
+        except Exception as e:
+            loggers.error(f"Error updating file status for {file_id}: {e}")
 
     def delete_file(self, path):
         try:

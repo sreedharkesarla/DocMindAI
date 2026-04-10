@@ -48,7 +48,8 @@ class RDSHelper:
                 cursorclass=cursors.DictCursor,
                 connect_timeout=10,
                 read_timeout=30,
-                write_timeout=30
+                write_timeout=30,
+                autocommit=True  # Prevent query caching in transactions
             )
             self.cursor = self.connection.cursor()
             logger.info("Connected to the database")
@@ -198,22 +199,43 @@ class RDSHelper:
 
         Args:
             user_id (str): ID of the user.
-
+        
         Returns:
-            str: JSON string containing the fetched file statuses or error message.
+            list: List of file statuses for the user.
         """
         try:
+            self.ensure_connection()
             fetch_query = sql.SQL(self.rds_config['files_status_by_user_id'])
             self.cursor.execute(fetch_query, (user_id,))
             records = self.cursor.fetchall()
-            logger.info(f"Fetched {len(records)} file statuses, user_id: {user_id}")
-            return json.dumps([{
-                "file_name": record[0],
-                "status": record[1]
-            } for record in records])
+            logger.info(f"Fetched {len(records)} file statuses for user_id: {user_id}")
+            # Return as list of dicts (DictCursor already does this)
+            return records
         except Exception as error:
             logger.error(f"Error: Could not fetch file statuses\n{error}")
-            return json.dumps({"error": str(error)})
+            return []
+    
+    def get_file_status(self, file_id: str):
+        """
+        Get the status of a specific file by file_id.
+        
+        Args:
+            file_id (str): ID of the file.
+            
+        Returns:
+            dict: File record with status, or None if not found.
+        """
+        try:
+            self.ensure_connection()
+            query = "SELECT id, file_id, user_id, file_name, status FROM peakdefence WHERE file_id = %s LIMIT 1"
+            self.cursor.execute(query, (file_id,))
+            record = self.cursor.fetchone()
+            if record:
+                logger.info(f"Found file {file_id} with status: {record.get('status')}")
+            return record
+        except Exception as error:
+            logger.error(f"Error: Could not get file status for {file_id}\n{error}")
+            return None
         
     def delete_document(self, file_ids, user_id):
         """

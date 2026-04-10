@@ -26,8 +26,13 @@ class Uploader:
             logger.info(f"Saved file: {saved}")
             logger.info(f"File uploaded: {path}")
             
-            # Send message to SQS
-            sqs.send_message(self.queue_name, message)
+            # Send message to SQS with deduplication ID to prevent duplicates
+            message_with_meta = {
+                **message,
+                'MessageDeduplicationId': file_id  # Use file_id for deduplication
+            }
+            sqs.send_message(self.queue_name, message, message_group_id=file_id)
+            logger.info(f"Message sent to SQS for file_id: {file_id}")
             
             # Clean up local file
             os.remove(file_path)

@@ -48,12 +48,27 @@ async def loop(async_queue: AsyncQueue, indexer: Indexer):
                 
                 parsed = json.loads(message_body)
                 logger.info(f"Parsed message: {parsed}")
+                file_id = parsed.get('file_id')
+                
+                # Check if file is already indexed to prevent reindexing
+                file_status = indexer.get_file_status(file_id)
+                if file_status in ['indexed', 'processing']:
+                    logger.info(f"File {file_id} already {file_status}, skipping reindexing")
+                    # Delete message since file is already processed
+                    if receipt_handle and queue_name:
+                        sqs.delete_message(queue_name, receipt_handle)
+                        logger.info(f"Deleted duplicate message for already-indexed file {file_id}")
+                    continue
+                
                 loop_obj = asyncio.get_running_loop()
                 
+                # Set status to processing before indexing
+                indexer.update_file_status(file_id, 'processing')
+                logger.info(f"Starting indexing for file: {parsed.get('file_path')} (file_id: {file_id})")
+                
                 # Run indexing synchronously to ensure completion
-                logger.info(f"Starting indexing for file: {parsed.get('file_path')}")
                 await loop_obj.run_in_executor(executor, indexer.index_file, parsed)
-                logger.info(f"Indexing completed for file: {parsed.get('file_path')}")
+                logger.info(f"Indexing completed for file: {parsed.get('file_path')} (file_id: {file_id})")
                 
                 # Only delete from SQS after successful indexing
                 if receipt_handle and queue_name:

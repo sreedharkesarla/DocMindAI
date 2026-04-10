@@ -24,5 +24,20 @@ rds:
   files_status_by_user_id: |
     SELECT file_name, status FROM peakdefence WHERE user_id = %s
 
+  processing_files: |
+    SELECT file_id, user_id, file_name, status FROM peakdefence WHERE status = 'processing' ORDER BY id DESC
+
+  pipeline_status: |
+    SELECT 
+      status,
+      COUNT(*) as count,
+      GROUP_CONCAT(CONCAT(file_id, ':', file_name, ':', user_id) SEPARATOR ';;') as files
+    FROM peakdefence 
+    WHERE user_id = %s
+    GROUP BY status
+
+  recent_files: |
+    SELECT file_id, user_id, file_name, status FROM peakdefence WHERE user_id = %s ORDER BY id DESC LIMIT 20
+
   delete_files: |
     DELETE FROM peakdefence WHERE file_id = ANY(%s) AND user_id = %s RETURNING id, file_id, user_id, file_name, status;

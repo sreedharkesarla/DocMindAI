@@ -34,14 +34,12 @@ class UploaderWithSQS:
 
     def upload(self, message: dict):
         """
-        Upload file and send message to SQS.
+        Upload file (SQS message is sent by the uploader itself).
         """
         try:
-            # Pass dummy producer to satisfy the method signature
+            # Uploader.upload() already sends message to SQS
+            # DO NOT send message again here to prevent duplicates
             self.uploader.upload(message)
-            
-            # Send message to SQS
-            send_sqs_message(message, self.queue_name)
             
         except Exception as e:
             logger.error(f"Error in upload: {str(e)}")

@@ -51,7 +51,8 @@ class RDSHelper:
                 cursorclass=cursors.DictCursor,
                 connect_timeout=10,
                 read_timeout=30,
-                write_timeout=30
+                write_timeout=30,
+                autocommit=True  # Prevent query caching in transactions
             )
             self.cursor = self.connection.cursor()
             logger.info("Connected to the database")
@@ -215,6 +216,95 @@ class RDSHelper:
         except Exception as error:
             logger.error(f"Error: Could not fetch file statuses\n{error}")
             return {"error": str(error)}
+    
+    def fetch_processing_files(self):
+        """
+        Fetch all files currently being indexed (status='processing').
+
+        Returns:
+            list: List of files with processing status.
+        """
+        try:
+            self.ensure_connection()
+            fetch_query = self.rds_config['processing_files']
+            self.cursor.execute(fetch_query)
+            records = self.cursor.fetchall()
+            logger.info(f"Fetched {len(records)} files being indexed")
+            return [{
+                "fileId": record['file_id'],
+                "userId": record['user_id'],
+                "filename": record['file_name'],
+                "status": record['status']
+            } for record in records]
+        except Exception as error:
+            logger.error(f"Error: Could not fetch processing files\n{error}")
+            return []
+    
+    def fetch_pipeline_status(self, user_id):
+        """
+        Fetch pipeline status showing files grouped by stage (uploaded, processing, indexed).
+
+        Args:
+            user_id (str): ID of the user.
+
+        Returns:
+            dict: Pipeline status with files at each stage.
+        """
+        try:
+            self.ensure_connection()
+            
+            # Get all files for the user
+            all_files_query = self.rds_config['recent_files']
+            self.cursor.execute(all_files_query, (user_id,))
+            all_records = self.cursor.fetchall()
+            
+            # Build pipeline status by grouping in Python (avoids SQL caching)
+            pipeline = {
+                "uploaded": {"count": 0, "files": []},
+                "processing": {"count": 0, "files": []},
+                "indexed": {"count": 0, "files": []}
+            }
+            
+            recent_files = []
+            
+            # Process each file
+            for record in all_records:
+                file_info = {
+                    "fileId": record['file_id'],
+                    "userId": record['user_id'],
+                    "filename": record['file_name'],
+                    "status": record['status']
+                }
+                
+                # Add to recent files
+                recent_files.append(file_info)
+                
+                # Add to appropriate pipeline stage
+                status = record['status']
+                if status in pipeline:
+                    pipeline[status]['files'].append(file_info)
+                    pipeline[status]['count'] += 1
+            
+            result = {
+                "pipeline": pipeline,
+                "recent_files": recent_files,
+                "total_files": len(recent_files)
+            }
+            
+            logger.info(f"Fetched pipeline status for user {user_id}: {pipeline['uploaded']['count']} uploaded, {pipeline['processing']['count']} processing, {pipeline['indexed']['count']} indexed")
+            return result
+            
+        except Exception as error:
+            logger.error(f"Error: Could not fetch pipeline status\n{error}")
+            return {
+                "pipeline": {
+                    "uploaded": {"count": 0, "files": []},
+                    "processing": {"count": 0, "files": []},
+                    "indexed": {"count": 0, "files": []}
+                },
+                "recent_files": [],
+                "total_files": 0
+            }
         
     def delete_document(self, file_ids, user_id):
         """

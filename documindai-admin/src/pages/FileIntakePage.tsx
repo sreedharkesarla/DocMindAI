@@ -24,6 +24,8 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Tabs,
+  Tab,
 } from '@mui/material';
 import { useDropzone } from 'react-dropzone';
 import { 
@@ -71,6 +73,7 @@ export const FileIntakePage: React.FC = () => {
   const [selectedDocuments, setSelectedDocuments] = useState<string[]>([]);
   const [previewFile, setPreviewFile] = useState<FileMetadata | null>(null);
   const [autoRefresh, setAutoRefresh] = useState(false);
+  const [activeTab, setActiveTab] = useState(0);
 
   const loadDocuments = async () => {
     if (!state.user) return;
@@ -290,10 +293,21 @@ export const FileIntakePage: React.FC = () => {
         File Intake & Processing
       </Typography>
 
-      <Paper sx={{ p: 3, mb: 3 }}>
-        <Typography variant="h6" gutterBottom>
-          Upload Files
-        </Typography>
+      <Paper>
+        <Tabs 
+          value={activeTab} 
+          onChange={(_, newValue) => setActiveTab(newValue)}
+          sx={{ borderBottom: 1, borderColor: 'divider', px: 3, pt: 2 }}
+        >
+          <Tab label="Upload" />
+          <Tab label="Uploaded Files" />
+        </Tabs>
+
+        {activeTab === 0 && (
+          <Box sx={{ p: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              Upload Files
+            </Typography>
 
         <Box
           {...getRootProps()}
@@ -448,18 +462,20 @@ export const FileIntakePage: React.FC = () => {
           </Button>
         </Box>
 
-        <Box
-          sx={{ mt: 2 }}
-          role="status"
-          aria-live="polite"
-          aria-atomic="true"
-          className="sr-only"
-        >
-          {uploading && `Uploading ${selectedFiles.length} files...`}
-        </Box>
-      </Paper>
+            <Box
+              sx={{ mt: 2 }}
+              role="status"
+              aria-live="polite"
+              aria-atomic="true"
+              className="sr-only"
+            >
+              {uploading && `Uploading ${selectedFiles.length} files...`}
+            </Box>
+          </Box>
+        )}
 
-      <Paper sx={{ p: 3 }}>
+        {activeTab === 1 && (
+          <Box sx={{ p: 3 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
           <Box>
             <Typography variant="h6">
@@ -756,7 +772,9 @@ export const FileIntakePage: React.FC = () => {
                   variant="outlined"
                 />
               ))}
+              </Box>
             </Box>
+          )}
           </Box>
         )}
       </Paper>

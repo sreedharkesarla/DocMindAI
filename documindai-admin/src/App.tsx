@@ -7,7 +7,7 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { LoginPage } from './pages/LoginPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { FileIntakePage } from './pages/FileIntakePage';
-import { ProcessingQueuePage } from './pages/ProcessingQueuePage';
+import { ProcessingPipelinePage } from './pages/ProcessingPipelinePage';
 import { JobDetailPage } from './pages/JobDetailPage';
 import { UsersRolesPage } from './pages/UsersRolesPageEnhanced';
 import { ChatPage } from './pages/ChatPage';
@@ -38,7 +38,7 @@ function AppContent() {
               <Route index element={<DashboardPage />} />
               <Route path="dashboard" element={<DashboardPage />} />
               <Route path="intake" element={<FileIntakePage />} />
-              <Route path="queue" element={<ProcessingQueuePage />} />
+              <Route path="pipeline" element={<ProcessingPipelinePage />} />
               <Route path="jobs/:jobId" element={<JobDetailPage />} />
               <Route path="chat" element={<ChatPage />} />
               <Route path="users" element={<UsersRolesPage />} />

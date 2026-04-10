@@ -158,6 +158,26 @@ export const getSystemSettings = async (): Promise<any> => {
   }
 };
 
+export const getIndexingStatus = async (): Promise<any> => {
+  try {
+    const response = await api.get('/upload/indexing-status');
+    return response.data;
+  } catch (error) {
+    console.error('Failed to fetch indexing status:', error);
+    throw error;
+  }
+};
+
+export const getPipelineStatus = async (userId: string): Promise<any> => {
+  try {
+    const response = await api.get(`/upload/pipeline-status/${userId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Failed to fetch pipeline status:', error);
+    throw error;
+  }
+};
+
 export const getUsageStats = async (userId: string, days: number = 30): Promise<any> => {
   try {
     const response = await api.get(`/upload/usage/${userId}?days=${days}`);
